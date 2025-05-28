@@ -1,0 +1,10 @@
+[buildPlans.iosevka-custom]
+family = "Iosevka Custom"
+spacing = "term"
+serifs = "sans"
+[buildPlans.iosevka-custom.variants]
+inherits = "ss08"
+[buildPlans.iosevka-custom.metricOverride]
+leading = 1000
+parenSize = 900
+xHeight = 570

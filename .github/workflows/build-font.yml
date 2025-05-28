@@ -1,0 +1,56 @@
+name: Build and Release Iosevka Custom Nerd Font
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y fontforge python3-fontforge zip curl unzip ttfautohint
+
+      - name: Clone Iosevka and copy build plan
+        run: |
+          git clone --depth=1 https://github.com/be5invis/Iosevka.git
+          cp -r ./private-build-plans.toml Iosevka/
+          cd Iosevka
+          npm install
+
+      - name: Build Iosevka with custom plan
+        run: |
+          cd Iosevka
+          npm run build -- ttf::iosevka-custom
+
+      - name: Download and extract Nerd Fonts Font Patcher
+        run: |
+          curl -L -o FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FontPatcher.zip
+          unzip FontPatcher.zip -d font-patcher
+          chmod +x font-patcher/font-patcher
+
+      - name: Patch fonts with Nerd Font glyphs
+        run: |
+          mkdir -p patched
+          for font in Iosevka/dist/iosevka-custom/TTF/*.ttf; do
+            fontforge -script font-patcher/font-patcher "$font" --complete --careful --quiet --outputdir patched/
+          done
+
+      - name: Zip patched fonts
+        run: |
+          cd patched
+          zip -r ../iosevka-custom-nerd.zip ./*.ttf
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: iosevka-custom-nerd.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
